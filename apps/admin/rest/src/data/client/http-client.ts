@@ -1,6 +1,7 @@
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import Router from 'next/router';
+import { toast } from 'react-toastify';
 import { API_ENDPOINTS } from './api-endpoints';
 
 /**
@@ -44,9 +45,22 @@ Axios.interceptors.response.use(
     if (error.config?.url === API_ENDPOINTS.TOKEN) {
       return Promise.reject(error);
     }
+    // Un 403 es "autenticado, pero sin permiso para esto": la sesión sigue
+    // siendo válida, así que se avisa con un toast y NO se cierra. Antes un
+    // 403 borraba la cookie y sacaba al usuario (p. ej. el dashboard de
+    // `store_owner` pide `/analytics`, que es solo `super_admin`).
+    // `toastId` fijo: el dashboard dispara varias peticiones a la vez y sin
+    // él saldrían varios toasts iguales apilados.
+    if (error.response?.status === 403) {
+      toast.error(
+        error.response.data?.message ??
+          'No tienes permisos suficientes para continuar.',
+        { toastId: 'insufficient-permissions' },
+      );
+      return Promise.reject(error);
+    }
     if (
       (error.response && error.response.status === 401) ||
-      (error.response && error.response.status === 403) ||
       (error.response &&
         error.response.data.message === 'PICKBAZAR_ERROR.NOT_AUTHORIZED')
     ) {
