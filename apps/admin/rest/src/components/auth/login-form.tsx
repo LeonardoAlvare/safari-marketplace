@@ -54,7 +54,16 @@ const LoginForm = () => {
             setErrorMessage('form:error-credential-wrong');
           }
         },
-        onError: () => {},
+        onError: (err: any) => {
+          // La API responde 401 a credenciales inválidas (email inexistente,
+          // contraseña mala o usuario inactivo, sin distinguirlos). Cualquier
+          // otro fallo (API caída, 5xx) no es culpa de las credenciales.
+          setErrorMessage(
+            err?.response?.status === 401
+              ? 'form:error-credential-wrong'
+              : 'common:text-something-wrong',
+          );
+        },
       },
     );
   }

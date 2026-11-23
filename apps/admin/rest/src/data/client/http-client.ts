@@ -1,6 +1,7 @@
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import Router from 'next/router';
+import { API_ENDPOINTS } from './api-endpoints';
 
 /**
  * Prefijo relativo con el que el navegador habla con la API. El
@@ -37,6 +38,12 @@ Axios.interceptors.request.use((config) => {
 Axios.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Un 401 de `POST /token` es "credenciales inválidas", no una sesión
+    // vencida: no hay sesión que limpiar, y recargar borraría el error antes
+    // de que el formulario de login pudiera mostrarlo.
+    if (error.config?.url === API_ENDPOINTS.TOKEN) {
+      return Promise.reject(error);
+    }
     if (
       (error.response && error.response.status === 401) ||
       (error.response && error.response.status === 403) ||
